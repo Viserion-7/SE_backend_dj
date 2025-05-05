@@ -1,0 +1,28 @@
+# Byte-compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.env
+
+# Database files
+*.sqlite3
+alembic/versions/
+
+# Dependency & build artifacts
+*.egg-info/
+dist/
+build/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+
+alembic.ini
+
+logs/
+*.log
