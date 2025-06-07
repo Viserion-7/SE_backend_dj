@@ -137,7 +137,8 @@ def register_user(request):
         return Response({
             'id': user.id,
             'username': user.username,
-            'email': user.email
+            'email': user.email,
+            'password': password  # Include password for initial login
         }, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response(
@@ -160,7 +161,8 @@ def login_user(request):
         return Response({
             'id': user.id,
             'username': user.username,
-            'email': user.email
+            'email': user.email,
+            'password': password  # Include password for Basic Auth
         })
     else:
         return Response(
