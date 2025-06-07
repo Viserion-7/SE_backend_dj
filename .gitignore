@@ -1,28 +1,44 @@
-# Byte-compiled files
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Virtual environment
-venv/
-.env
-
-# Database files
-*.sqlite3
-alembic/versions/
-
-# Dependency & build artifacts
-*.egg-info/
-dist/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# IDE & Editor files
-.vscode/
-.idea/
-*.swp
-
-alembic.ini
-
-logs/
+# Django
 *.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,18 +1,16 @@
 from rest_framework import viewsets, filters, status
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes, action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.authentication import BasicAuthentication
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.utils import timezone
 from .models import Task, SubTask, Category, Reminder
 from .serializers import TaskSerializer, SubTaskSerializer, CategorySerializer, ReminderSerializer
-
+from .utils import check_and_send_reminders
 
 class TaskViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing tasks.
-    """
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
     permission_classes = [IsAuthenticated]
@@ -21,50 +19,81 @@ class TaskViewSet(viewsets.ModelViewSet):
     ordering_fields = ['due_date', 'priority', 'created_at']
 
     def get_queryset(self):
-        # Return tasks only for the authenticated user
         return self.queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Automatically set the authenticated user
         serializer.save(user=self.request.user)
 
+    @action(detail=False, methods=['post'])
+    def check_reminders(self, request):
+        """
+        Manually trigger reminder checks
+        """
+        try:
+            check_and_send_reminders()
+            return Response({
+                'message': 'Reminders checked and sent successfully'
+            })
+        except Exception as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'])
+    def reminder_status(self, request):
+        """
+        Get reminder status for the user's tasks
+        """
+        user_tasks = Task.objects.filter(user=request.user)
+        upcoming_reminders = Reminder.objects.filter(
+            task__in=user_tasks,
+            sent=False,
+            remind_at__gte=timezone.now()
+        ).order_by('remind_at')
+        
+        sent_reminders = Reminder.objects.filter(
+            task__in=user_tasks,
+            sent=True
+        ).order_by('-remind_at')[:5]  # Last 5 sent reminders
+        
+        return Response({
+            'upcoming_reminders': [
+                {
+                    'task': reminder.task.title,
+                    'remind_at': reminder.remind_at,
+                    'task_due': reminder.task.due_date
+                }
+                for reminder in upcoming_reminders
+            ],
+            'recent_sent': [
+                {
+                    'task': reminder.task.title,
+                    'sent_at': reminder.remind_at,
+                    'task_due': reminder.task.due_date
+                }
+                for reminder in sent_reminders
+            ]
+        })
 
 class SubTaskViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing subtasks.
-    """
     serializer_class = SubTaskSerializer
     queryset = SubTask.objects.all()
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Return subtasks only for tasks owned by the authenticated user
         return self.queryset.filter(task__user=self.request.user)
 
-
 class CategoryViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing categories.
-    """
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Return all categories (can be global or user-specific if needed)
-        return self.queryset
-
-
 class ReminderViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing reminders.
-    """
     serializer_class = ReminderSerializer
     queryset = Reminder.objects.all()
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Return reminders only for tasks owned by the authenticated user
         return self.queryset.filter(task__user=self.request.user)
 
 @api_view(['POST'])
@@ -131,8 +160,7 @@ def login_user(request):
         return Response({
             'id': user.id,
             'username': user.username,
-            'email': user.email,
-            'password': password  # Include password for Basic Auth
+            'email': user.email
         })
     else:
         return Response(
