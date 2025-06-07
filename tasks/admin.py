@@ -4,16 +4,12 @@ from .models import Task, SubTask, Category, Reminder
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'priority', 'due_date', 'is_completed', 'get_categories', 'created_at', 'updated_at')
-    list_filter = ('priority', 'is_completed', 'due_date', 'categories')
-    search_fields = ('title', 'description', 'categories__name')
+    list_display = ('title', 'user', 'priority', 'due_date', 'is_completed', 'category', 'created_at', 'updated_at')
+    list_filter = ('priority', 'is_completed', 'due_date', 'category')
+    search_fields = ('title', 'description', 'category__name')
     ordering = ('due_date',)
-    autocomplete_fields = ('categories',)
+    autocomplete_fields = ('category',)
     date_hierarchy = 'due_date'
-
-    def get_categories(self, obj):
-        return ", ".join([category.name for category in obj.categories.all()])
-    get_categories.short_description = "Categories"
 
 
 @admin.register(SubTask)

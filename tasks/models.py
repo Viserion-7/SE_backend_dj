@@ -32,7 +32,7 @@ class Task(models.Model):
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Normal')
     due_date = models.DateTimeField()
     is_completed = models.BooleanField(default=False)
-    categories = models.ManyToManyField(Category, related_name="tasks", blank=True)
+    category = models.ForeignKey(Category, related_name="tasks", on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -44,9 +44,10 @@ class Task(models.Model):
         super().save(*args, **kwargs)
 
         # Default category assignment
-        if self.categories.count() == 0:
+        if not self.category:
             personal_category, _ = Category.objects.get_or_create(name="Personal")
-            self.categories.add(personal_category)
+            self.category = personal_category
+            self.save()
             
         # Default reminders (30 mins, 2 hrs, 1 day at 8 AM, 3 days at 8 AM)
         reminder_times = [
