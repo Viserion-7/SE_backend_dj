@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from datetime import timedelta
-
 
 class Category(models.Model):
     """
@@ -14,7 +15,6 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-
 
 class Task(models.Model):
     """
@@ -39,42 +39,38 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
-    def save(self, *args, **kwargs):
-        # Save the task first
-        super().save(*args, **kwargs)
-
-        # Default category assignment
-        if not self.category:
-            personal_category, _ = Category.objects.get_or_create(name="Personal")
-            self.category = personal_category
-            self.save()
-            
-        # Default reminders (30 mins, 2 hrs, 1 day at 8 AM, 3 days at 8 AM)
+    def create_default_reminders(self):
+        """Create default reminders for the task"""
         reminder_times = [
-            self.due_date - timedelta(minutes=30),
-            self.due_date - timedelta(hours=2),
-            self.due_date.replace(hour=8, minute=0, second=0, microsecond=0) - timedelta(days=1),
-            self.due_date.replace(hour=8, minute=0, second=0, microsecond=0) - timedelta(days=3),
+            timedelta(minutes=30),          # 30 minutes before
+            timedelta(hours=2),             # 2 hours before
+            timedelta(days=1),              # 1 day before
+            timedelta(days=3),              # 3 days before
         ]
 
-        # Create reminders if they don't already exist
-        for remind_at in reminder_times:
-            if remind_at > timezone.now():  # Only add future reminders
-                Reminder.objects.get_or_create(task=self, remind_at=remind_at)
-
+        for time_delta in reminder_times:
+            remind_at = self.due_date - time_delta
+            if remind_at > timezone.now():
+                Reminder.objects.create(
+                    task=self,
+                    remind_at=remind_at
+                )
 
 class SubTask(models.Model):
     """
-    Represents a subtask under a main task.
+    Represents a subtask or step within a main task.
     """
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="subtasks")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
     title = models.CharField(max_length=255)
+    minutes = models.IntegerField(default=30)  # Duration in minutes
     is_completed = models.BooleanField(default=False)
-    due_date = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.task.title})"
 
+    class Meta:
+        ordering = ['created_at']
 
 class Reminder(models.Model):
     """
@@ -86,3 +82,16 @@ class Reminder(models.Model):
 
     def __str__(self):
         return f"Reminder for {self.task.title} at {self.remind_at}"
+
+# Signals
+@receiver(post_save, sender=Task)
+def create_reminders(sender, instance, created, **kwargs):
+    """Create reminders when a task is created"""
+    if created:
+        instance.create_default_reminders()
+
+@receiver(post_save, sender=Task)
+def sync_subtask_completion(sender, instance, **kwargs):
+    """Complete all subtasks when main task is completed"""
+    if instance.is_completed:
+        instance.subtasks.all().update(is_completed=True)

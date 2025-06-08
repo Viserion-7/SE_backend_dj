@@ -1,25 +1,19 @@
 from django.contrib import admin
 from .models import Task, SubTask, Category, Reminder
 
-
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'priority', 'due_date', 'is_completed', 'category', 'created_at', 'updated_at')
-    list_filter = ('priority', 'is_completed', 'due_date', 'category')
-    search_fields = ('title', 'description', 'category__name')
-    ordering = ('due_date',)
-    autocomplete_fields = ('category',)
-    date_hierarchy = 'due_date'
-
+    list_display = ('title', 'user', 'priority', 'due_date', 'is_completed', 'category')
+    list_filter = ('is_completed', 'priority', 'category')
+    search_fields = ('title', 'description')
+    ordering = ('-due_date',)
 
 @admin.register(SubTask)
 class SubTaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'task', 'is_completed', 'due_date')
-    list_filter = ('is_completed', 'due_date')
-    search_fields = ('title', 'task__title')
-    ordering = ('due_date',)
-    date_hierarchy = 'due_date'
-
+    list_display = ('title', 'task', 'minutes', 'is_completed', 'created_at')
+    list_filter = ('is_completed',)
+    search_fields = ('title', 'task')
+    ordering = ('created_at',)
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -27,11 +21,8 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     ordering = ('name',)
 
-
 @admin.register(Reminder)
 class ReminderAdmin(admin.ModelAdmin):
     list_display = ('task', 'remind_at', 'sent')
-    list_filter = ('sent', 'remind_at')
-    search_fields = ('task__title',)
+    list_filter = ('sent',)
     ordering = ('remind_at',)
-    date_hierarchy = 'remind_at'

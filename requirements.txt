@@ -2,12 +2,16 @@
 Django>=4.2.0
 djangorestframework>=3.14.0
 django-cors-headers>=4.0.0
-
-# Environment variables
 python-dotenv>=1.0.0
 
 # Database
 # psycopg2>=2.9.6  # Uncomment if using PostgreSQL
+
+# Email
+django-templated-mail>=1.1.1
+
+# AI Features
+google-generativeai>=0.3.0
 
 # Development
 django-debug-toolbar>=4.1.0
@@ -15,3 +19,6 @@ django-debug-toolbar>=4.1.0
 # Testing
 pytest>=7.3.1
 pytest-django>=4.5.2
+
+# API Documentation
+drf-spectacular>=0.26.0
