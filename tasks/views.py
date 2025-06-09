@@ -22,10 +22,29 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=True, methods=['get'])
+    def subtasks(self, request, pk=None):
+        """Get all subtasks for a specific task"""
+        task = self.get_object()
+        subtasks = SubTask.objects.filter(task=task)
+        serializer = SubTaskSerializer(subtasks, many=True)
+        return Response(serializer.data)
+
 class SubTaskViewSet(viewsets.ModelViewSet):
-    queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return SubTask.objects.filter(task__user=self.request.user)
+
+    @action(detail=True, methods=['put'])
+    def complete(self, request, pk=None):
+        """Toggle completion status of a subtask"""
+        subtask = self.get_object()
+        subtask.is_completed = not subtask.is_completed
+        subtask.save()
+        serializer = self.get_serializer(subtask)
+        return Response(serializer.data)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
@@ -42,9 +61,7 @@ class ReminderViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_user(request):
-    """
-    Register a new user.
-    """
+    """Register a new user"""
     username = request.data.get('username')
     email = request.data.get('email')
     password = request.data.get('password')
@@ -88,9 +105,7 @@ def register_user(request):
 @authentication_classes([BasicAuthentication])
 @permission_classes([AllowAny])
 def login_user(request):
-    """
-    Login user with username and password.
-    """
+    """Login user with username and password"""
     username = request.data.get('username')
     password = request.data.get('password')
 
