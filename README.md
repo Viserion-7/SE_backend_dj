@@ -1,7 +1,7 @@
 # TaskNinja Backend
 
 TaskNinja is an AI-powered task management system built with Django and Django REST Framework.
-
+[Link to Frontend Repo](https://github.com/Viserion-7/Task_Ninja_Frontend)
 ## Features
 
 - User Authentication
